@@ -1,5 +1,6 @@
 package com.example.x_o_new_version;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -19,6 +20,14 @@ public class TicTacToeController {
     private Label playerOLabel;
     @FXML
     private Label turnLabel;
+    @FXML
+    private Label statusLabel;
+    @FXML
+    private Label playerIdLabel;
+    @FXML
+    private Label gameIdLabel;
+    @FXML
+    private Label connectedPlayersLabel;
 
     private Button[] buttons = new Button[9];
     private Socket socket;
@@ -28,9 +37,11 @@ public class TicTacToeController {
     private boolean gameOver = false;
 
     public void initialize() throws IOException {
-        socket = new Socket("localhost", 12345);
-        out = new PrintWriter(socket.getOutputStream(), true);
-        in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        if (socket == null || socket.isClosed()) {
+            socket = new Socket("localhost", 12345);
+            out = new PrintWriter(socket.getOutputStream(), true);
+            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        }
 
         for (int i = 0; i < 9; i++) {
             buttons[i] = new Button(" ");
@@ -45,7 +56,7 @@ public class TicTacToeController {
     }
 
     private void makeMove(int index) {
-        if (!gameOver) {
+        if (!gameOver && buttons[index].getText().equals(" ")) {
             out.println("MOVE " + index);
         }
     }
@@ -54,42 +65,56 @@ public class TicTacToeController {
         try {
             String message;
             while ((message = in.readLine()) != null) {
-                final String finalMessage = message; // Make message effectively final
-                if (message.startsWith("WELCOME")) {
-                    player = message.charAt(8);
-                    javafx.application.Platform.runLater(() -> {
-                        if (player == 'X') {
-                            playerXLabel.setText("Player X: You");
-                            playerOLabel.setText("Player O: Opponent");
-                        } else {
-                            playerXLabel.setText("Player X: Opponent");
-                            playerOLabel.setText("Player O: You");
-                        }
-                    });
-                } else if (message.startsWith("[")) {
-                    updateBoard(message);
-                } else if (message.equals("INVALID MOVE")) {
-                    showMessage("Invalid move, try again.");
-                } else if (message.startsWith("PLAYER")) {
-                    showMessage(message);
-                    gameOver = true;
-                } else if (message.equals("DRAW")) {
-                    showMessage("It's a draw!");
-                    gameOver = true;
-                } else if (message.startsWith("TURN")) {
-                    showTurn(message.charAt(5));
-                }
+                final String finalMessage = message; // Declare as final
+                Platform.runLater(() -> handleServerMessage(finalMessage));
             }
         } catch (IOException e) {
             e.printStackTrace();
+            Platform.runLater(() -> showMessage("Connection lost."));
+        }
+    }
+
+    private void handleServerMessage(String message) {
+        if (message.startsWith("WELCOME")) {
+            player = message.charAt(8);
+            if (player == 'X') {
+                playerXLabel.setText("Player X: You");
+                playerOLabel.setText("Player O: Opponent");
+            } else {
+                playerXLabel.setText("Player X: Opponent");
+                playerOLabel.setText("Player O: You");
+            }
+        } else if (message.startsWith("[")) {
+            updateBoard(message);
+        } else if (message.equals("INVALID MOVE")) {
+            showMessage("Invalid move, try again.");
+        } else if (message.startsWith("PLAYER")) {
+            showMessage(message);
+            gameOver = true;
+        } else if (message.equals("DRAW")) {
+            showMessage("It's a draw!");
+            gameOver = true;
+        } else if (message.startsWith("TURN")) {
+            showTurn(message.charAt(5));
+        } else if (message.equals("WAITING FOR SECOND PLAYER")) {
+            showStatus("Waiting for second player...");
+        } else if (message.equals("SECOND PLAYER JOINED")) {
+            showStatus("Second player joined. Game starting...");
+        } else if (message.startsWith("PLAYER ID")) {
+            playerIdLabel.setText("Player ID: " + message.split(" ")[2]);
+        } else if (message.startsWith("GAME ID")) {
+            gameIdLabel.setText("Game ID: " + message.split(" ")[2]);
+        } else if (message.startsWith("CONNECTED PLAYERS")) {
+            connectedPlayersLabel.setText("Connected Players: " + message.split(" ")[2]);
         }
     }
 
     private void updateBoard(String boardString) {
-        javafx.application.Platform.runLater(() -> {
+        Platform.runLater(() -> {
             String[] boardArray = boardString.replaceAll("[\\[\\] ]", "").split(",");
             for (int i = 0; i < boardArray.length; i++) {
                 buttons[i].setText(boardArray[i]);
+                buttons[i].getStyleClass().removeAll("x-button", "o-button");
                 if (boardArray[i].equals("X")) {
                     buttons[i].getStyleClass().add("x-button");
                 } else if (boardArray[i].equals("O")) {
@@ -100,10 +125,14 @@ public class TicTacToeController {
     }
 
     private void showMessage(String message) {
-        javafx.application.Platform.runLater(() -> messageLabel.setText(message));
+        Platform.runLater(() -> messageLabel.setText(message));
     }
 
     private void showTurn(char currentPlayer) {
-        javafx.application.Platform.runLater(() -> turnLabel.setText("Turn: Player " + currentPlayer));
+        Platform.runLater(() -> turnLabel.setText("Turn: Player " + currentPlayer));
+    }
+
+    private void showStatus(String status) {
+        Platform.runLater(() -> statusLabel.setText(status));
     }
 }
