@@ -1,0 +1,13 @@
+.tic-tac-toe-button {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-background-color: lightgray;
+}
+
+.x-button {
+    -fx-background-color: lightblue;
+}
+
+.o-button {
+    -fx-background-color: lightcoral;
+}
