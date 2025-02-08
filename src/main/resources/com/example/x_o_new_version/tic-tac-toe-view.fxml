@@ -12,6 +12,10 @@
     <Label fx:id="playerXLabel" text="Player X: " style="-fx-font-size: 16px;"/>
     <Label fx:id="playerOLabel" text="Player O: " style="-fx-font-size: 16px;"/>
     <Label fx:id="turnLabel" text="Turn: " style="-fx-font-size: 16px;"/>
+    <Label fx:id="statusLabel" text="" style="-fx-font-size: 16px; -fx-text-fill: red;"/>
+    <Label fx:id="playerIdLabel" text="Player ID: " style="-fx-font-size: 16px;"/>
+    <Label fx:id="gameIdLabel" text="Game ID: " style="-fx-font-size: 16px;"/>
+    <Label fx:id="connectedPlayersLabel" text="Connected Players: " style="-fx-font-size: 16px;"/>
     <GridPane fx:id="gridPane" alignment="CENTER" hgap="10" vgap="10">
     </GridPane>
 </VBox>

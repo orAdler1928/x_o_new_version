@@ -6,7 +6,8 @@ import java.util.*;
 
 public class TicTacToeServer {
     private static final int PORT = 12345;
-    private static Game game = new Game();
+    private static List<Game> games = Collections.synchronizedList(new ArrayList<>());
+    private static List<ClientHandler> waitingClients = Collections.synchronizedList(new ArrayList<>());
 
     public static void main(String[] args) throws IOException {
         ServerSocket serverSocket = new ServerSocket(PORT);
@@ -20,108 +21,55 @@ public class TicTacToeServer {
         }
     }
 
-    public static synchronized void addPlayer(ClientHandler client) {
-        if (game.addPlayer(client)) {
-            client.sendMessage("WELCOME " + client.getPlayer());
-            if (game.isReady()) {
-                game.startGame();
-            }
+    public static synchronized void createGame(ClientHandler client) {
+        Game game = new Game(client);
+        games.add(game);
+        waitingClients.add(client);
+        client.setCurrentGame(game);
+        client.sendMessage("GAME CREATED " + (games.size() - 1));
+        client.sendMessage("WAITING FOR SECOND PLAYER");
+        game.updatePlayerStatus();
+        game.sendGameId();
+        game.sendPlayerIds();
+        broadcastGameList();
+    }
+
+    public static synchronized void joinGame(ClientHandler client, int gameId) {
+        if (gameId < games.size() && games.get(gameId).addPlayer(client)) {
+            waitingClients.remove(games.get(gameId).getPlayer1());
+            client.setCurrentGame(games.get(gameId));
+            games.get(gameId).startGame();
+            games.get(gameId).updatePlayerStatus();
+            games.get(gameId).sendGameId();
+            games.get(gameId).sendPlayerIds();
+            broadcastGameList();
+            client.sendMessage("GAME JOINED");
         } else {
-            client.sendMessage("GAME FULL");
+            client.sendMessage("INVALID GAME ID");
         }
+    }
+
+    public static synchronized void broadcastGameList() {
+        List<String> availableGames = getAvailableGames();
+        for (ClientHandler client : waitingClients) {
+            client.sendMessage("GAMES " + String.join(",", availableGames));
+        }
+    }
+
+    public static synchronized List<String> getAvailableGames() {
+        List<String> availableGames = new ArrayList<>();
+        for (int i = 0; i < games.size(); i++) {
+            availableGames.add("Game " + i);
+        }
+        return availableGames;
     }
 
     public static synchronized void makeMove(ClientHandler client, int index) {
-        game.makeMove(index, client.getPlayer());
-    }
-}
-
-class Game {
-    private ClientHandler player1;
-    private ClientHandler player2;
-    private char[] board = new char[9];
-    private char currentPlayer = 'X';
-    private boolean gameOver = false;
-
-    public Game() {
-        Arrays.fill(board, ' ');
-    }
-
-    public boolean addPlayer(ClientHandler player) {
-        if (player1 == null) {
-            player1 = player;
-            player.setPlayer('X');
-            return true;
-        } else if (player2 == null) {
-            player2 = player;
-            player.setPlayer('O');
-            return true;
+        Game currentGame = client.getCurrentGame();
+        if (currentGame != null) {
+            currentGame.makeMove(index, client.getPlayer());
+        } else {
+            client.sendMessage("NO GAME ASSIGNED");
         }
-        return false;
-    }
-
-    public boolean isReady() {
-        return player1 != null && player2 != null;
-    }
-
-    public void startGame() {
-        broadcastBoard();
-        broadcastTurn();
-    }
-
-    public synchronized void makeMove(int index, char player) {
-        if (!gameOver && board[index] == ' ' && player == currentPlayer) {
-            board[index] = player;
-            currentPlayer = (currentPlayer == 'X') ? 'O' : 'X';
-            broadcastBoard();
-            broadcastTurn();
-            if (checkWin(player)) {
-                broadcastMessage("PLAYER " + player + " WINS");
-                gameOver = true;
-            } else if (checkDraw()) {
-                broadcastMessage("DRAW");
-                gameOver = true;
-            }
-        }
-    }
-
-    private void broadcastBoard() {
-        String boardState = Arrays.toString(board);
-        player1.sendBoard(boardState);
-        player2.sendBoard(boardState);
-    }
-
-    private void broadcastMessage(String message) {
-        player1.sendMessage(message);
-        player2.sendMessage(message);
-    }
-
-    private void broadcastTurn() {
-        player1.sendMessage("TURN " + currentPlayer);
-        player2.sendMessage("TURN " + currentPlayer);
-    }
-
-    private boolean checkWin(char player) {
-        int[][] winPositions = {
-                {0, 1, 2}, {3, 4, 5}, {6, 7, 8}, // rows
-                {0, 3, 6}, {1, 4, 7}, {2, 5, 8}, // columns
-                {0, 4, 8}, {2, 4, 6}             // diagonals
-        };
-
-        for (int[] pos : winPositions) {
-            if (board[pos[0]] == player && board[pos[1]] == player && board[pos[2]] == player) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean checkDraw() {
-        for (char c : board) {
-            if (c == ' ') {
-                return false;
-            }
-        }
-        return true;
     }
 }
