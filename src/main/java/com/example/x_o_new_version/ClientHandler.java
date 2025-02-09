@@ -29,8 +29,10 @@ public class ClientHandler implements Runnable {
                     int gameId = Integer.parseInt(input.split(" ")[1]);
                     TicTacToeServer.joinGame(this, gameId);
                 } else if (input.startsWith("MOVE")) {
-                    int index = Integer.parseInt(input.split(" ")[1]);
-                    TicTacToeServer.makeMove(this, index);
+                    String[] parts = input.split(" ");
+                    int index = Integer.parseInt(parts[1]);
+                    int gameId = Integer.parseInt(parts[2]);
+                    TicTacToeServer.makeMove(this, index, gameId);
                 } else if (input.startsWith("LIST")) {
                     List<String> availableGames = TicTacToeServer.getAvailableGames();
                     sendMessage("GAMES " + String.join(",", availableGames));
@@ -49,14 +51,18 @@ public class ClientHandler implements Runnable {
 
     public void sendBoard(String board) {
         out.println(board);
+        System.out.println("Sent board: " + board);
     }
 
     public void sendMessage(String message) {
         out.println(message);
+        System.out.println("Sent message: " + message);
     }
 
     public void setPlayer(char player) {
         this.player = player;
+        System.out.println("Player set to: " + player);
+        sendMessage("WELCOME " + player);
     }
 
     public char getPlayer() {

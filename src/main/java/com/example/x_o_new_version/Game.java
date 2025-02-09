@@ -15,7 +15,7 @@ class Game {
     }
 
     public boolean addPlayer(ClientHandler player) {
-        if (player2 == null) {
+        if (player2 == null && player != player1) {
             player2 = player;
             player.setPlayer('O');
             player1.sendMessage("SECOND PLAYER JOINED");
@@ -23,6 +23,7 @@ class Game {
             updatePlayerStatus();
             sendGameId();
             sendPlayerIds();
+            System.out.println("Second player joined game: " + this.hashCode());
             return true;
         }
         return false;
@@ -54,30 +55,43 @@ class Game {
                 broadcastMessage("DRAW");
                 gameOver = true;
             }
+            System.out.println("Move made: " + index + " by player: " + player);
         }
     }
 
-    private void broadcastBoard() {
+    public boolean isPlayerTurn(ClientHandler player) {
+        return (player == player1 && currentPlayer == 'X') || (player == player2 && currentPlayer == 'O');
+    }
+
+    public void broadcastBoard() {
         String boardState = Arrays.toString(board);
         player1.sendBoard(boardState);
-        player2.sendBoard(boardState);
+        if (player2 != null) {
+            player2.sendBoard(boardState);
+        }
+        System.out.println("Broadcast board: " + boardState);
     }
 
-    private void broadcastMessage(String message) {
+    public void broadcastMessage(String message) {
         player1.sendMessage(message);
-        player2.sendMessage(message);
+        if (player2 != null) {
+            player2.sendMessage(message);
+        }
+        System.out.println("Broadcast message: " + message);
     }
 
-    private void broadcastTurn() {
+    public void broadcastTurn() {
         player1.sendMessage("TURN " + currentPlayer);
-        player2.sendMessage("TURN " + currentPlayer);
+        if (player2 != null) {
+            player2.sendMessage("TURN " + currentPlayer);
+        }
     }
 
-    private boolean checkWin(char player) {
+    public boolean checkWin(char player) {
         int[][] winPositions = {
-                {0, 1, 2}, {3, 4, 5}, {6, 7, 8}, // rows
-                {0, 3, 6}, {1, 4, 7}, {2, 5, 8}, // columns
-                {0, 4, 8}, {2, 4, 6}             // diagonals
+                {0, 1, 2}, {3, 4, 5}, {6, 7, 8},
+                {0, 3, 6}, {1, 4, 7}, {2, 5, 8},
+                {0, 4, 8}, {2, 4, 6}
         };
 
         for (int[] pos : winPositions) {
@@ -88,7 +102,7 @@ class Game {
         return false;
     }
 
-    private boolean checkDraw() {
+    public boolean checkDraw() {
         for (char c : board) {
             if (c == ' ') {
                 return false;
@@ -118,5 +132,9 @@ class Game {
         if (player2 != null) {
             player2.sendMessage("PLAYER ID " + player2.hashCode());
         }
+    }
+
+    public void setGameOver(boolean gameOver) {
+        this.gameOver = gameOver;
     }
 }

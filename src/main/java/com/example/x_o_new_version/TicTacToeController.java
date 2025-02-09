@@ -35,14 +35,9 @@ public class TicTacToeController {
     private BufferedReader in;
     private char player;
     private boolean gameOver = false;
+    private int gameId;
 
-    public void initialize() throws IOException {
-        if (socket == null || socket.isClosed()) {
-            socket = new Socket("localhost", 12345);
-            out = new PrintWriter(socket.getOutputStream(), true);
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        }
-
+    public void initialize() {
         for (int i = 0; i < 9; i++) {
             buttons[i] = new Button(" ");
             buttons[i].setMinSize(100, 100);
@@ -51,21 +46,41 @@ public class TicTacToeController {
             buttons[i].setOnAction(e -> makeMove(index));
             gridPane.add(buttons[i], i % 3, i / 3);
         }
+        // Initialize labels
+        playerXLabel.setText("Player X: ");
+        playerOLabel.setText("Player O: ");
+        turnLabel.setText("Turn: ");
+        statusLabel.setText("");
+        playerIdLabel.setText("Player ID: ");
+        gameIdLabel.setText("Game ID: ");
+        connectedPlayersLabel.setText("Connected Players: ");
+    }
 
+    public void setGameId(int gameId) {
+        this.gameId = gameId;
+        gameIdLabel.setText("Game ID: " + gameId);
+    }
+
+    public void setConnection(Socket socket, PrintWriter out, BufferedReader in) {
+        this.socket = socket;
+        this.out = out;
+        this.in = in;
         new Thread(this::listenToServer).start();
     }
 
     private void makeMove(int index) {
         if (!gameOver && buttons[index].getText().equals(" ")) {
-            out.println("MOVE " + index);
+            out.println("MOVE " + index + " " + gameId);
         }
     }
+
 
     private void listenToServer() {
         try {
             String message;
             while ((message = in.readLine()) != null) {
-                final String finalMessage = message; // Declare as final
+                final String finalMessage = message;
+                System.out.println("Received from server: " + finalMessage);
                 Platform.runLater(() -> handleServerMessage(finalMessage));
             }
         } catch (IOException e) {
@@ -75,8 +90,10 @@ public class TicTacToeController {
     }
 
     private void handleServerMessage(String message) {
+        System.out.println("Handling server message: " + message);
         if (message.startsWith("WELCOME")) {
             player = message.charAt(8);
+            System.out.println("Player set to: " + player);
             if (player == 'X') {
                 playerXLabel.setText("Player X: You");
                 playerOLabel.setText("Player O: Opponent");
@@ -85,54 +102,64 @@ public class TicTacToeController {
                 playerOLabel.setText("Player O: You");
             }
         } else if (message.startsWith("[")) {
+            System.out.println("Updating board with message: " + message);
             updateBoard(message);
         } else if (message.equals("INVALID MOVE")) {
+            System.out.println("Invalid move received");
             showMessage("Invalid move, try again.");
         } else if (message.startsWith("PLAYER")) {
+            System.out.println("Player message received: " + message);
             showMessage(message);
             gameOver = true;
         } else if (message.equals("DRAW")) {
+            System.out.println("Draw message received");
             showMessage("It's a draw!");
             gameOver = true;
         } else if (message.startsWith("TURN")) {
+            System.out.println("Turn message received: " + message);
             showTurn(message.charAt(5));
         } else if (message.equals("WAITING FOR SECOND PLAYER")) {
+            System.out.println("Waiting for second player message received");
             showStatus("Waiting for second player...");
         } else if (message.equals("SECOND PLAYER JOINED")) {
+            System.out.println("Second player joined message received");
             showStatus("Second player joined. Game starting...");
         } else if (message.startsWith("PLAYER ID")) {
+            System.out.println("Player ID message received: " + message);
             playerIdLabel.setText("Player ID: " + message.split(" ")[2]);
         } else if (message.startsWith("GAME ID")) {
+            System.out.println("Game ID message received: " + message);
             gameIdLabel.setText("Game ID: " + message.split(" ")[2]);
         } else if (message.startsWith("CONNECTED PLAYERS")) {
+            System.out.println("Connected players message received: " + message);
             connectedPlayersLabel.setText("Connected Players: " + message.split(" ")[2]);
+        } else {
+            System.out.println("Unknown message received: " + message);
         }
     }
 
     private void updateBoard(String boardString) {
-        Platform.runLater(() -> {
-            String[] boardArray = boardString.replaceAll("[\\[\\] ]", "").split(",");
-            for (int i = 0; i < boardArray.length; i++) {
-                buttons[i].setText(boardArray[i]);
-                buttons[i].getStyleClass().removeAll("x-button", "o-button");
-                if (boardArray[i].equals("X")) {
-                    buttons[i].getStyleClass().add("x-button");
-                } else if (boardArray[i].equals("O")) {
-                    buttons[i].getStyleClass().add("o-button");
-                }
+        String[] boardArray = boardString.replaceAll("[\\[\\] ]", "").split(",");
+        for (int i = 0; i < boardArray.length; i++) {
+            buttons[i].setText(boardArray[i]);
+            buttons[i].getStyleClass().removeAll("x-button", "o-button");
+            if (boardArray[i].equals("X")) {
+                buttons[i].getStyleClass().add("x-button");
+            } else if (boardArray[i].equals("O")) {
+                buttons[i].getStyleClass().add("o-button");
             }
-        });
+        }
     }
 
     private void showMessage(String message) {
-        Platform.runLater(() -> messageLabel.setText(message));
+        messageLabel.setText(message);
     }
 
     private void showTurn(char currentPlayer) {
-        Platform.runLater(() -> turnLabel.setText("Turn: Player " + currentPlayer));
+        turnLabel.setText("Turn: Player " + currentPlayer);
     }
 
     private void showStatus(String status) {
-        Platform.runLater(() -> statusLabel.setText(status));
+        statusLabel.setText(status);
     }
 }
