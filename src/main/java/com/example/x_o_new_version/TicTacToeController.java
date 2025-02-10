@@ -1,10 +1,13 @@
 package com.example.x_o_new_version;
 
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.GridPane;
+import javafx.util.Duration;
 
 import java.io.*;
 import java.net.Socket;
@@ -28,6 +31,8 @@ public class TicTacToeController {
     private Label gameIdLabel;
     @FXML
     private Label connectedPlayersLabel;
+    @FXML
+    private Label timerLabel;
 
     private Button[] buttons = new Button[9];
     private Socket socket;
@@ -36,6 +41,8 @@ public class TicTacToeController {
     private char player;
     private boolean gameOver = false;
     private int gameId;
+    private Timeline timeline;
+    private int timeSeconds = 0;
 
     public void initialize() {
         for (int i = 0; i < 9; i++) {
@@ -54,6 +61,13 @@ public class TicTacToeController {
         playerIdLabel.setText("Player ID: ");
         gameIdLabel.setText("Game ID: ");
         connectedPlayersLabel.setText("Connected Players: ");
+
+        // Initialize timeline
+        timeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
+            timeSeconds++;
+            timerLabel.setText("Time: " + timeSeconds);
+        }));
+        timeline.setCycleCount(Timeline.INDEFINITE);
     }
 
     public void setGameId(int gameId) {
@@ -73,7 +87,6 @@ public class TicTacToeController {
             out.println("MOVE " + index + " " + gameId);
         }
     }
-
 
     private void listenToServer() {
         try {
@@ -101,11 +114,9 @@ public class TicTacToeController {
                 playerXLabel.setText("Player X: Opponent");
                 playerOLabel.setText("Player O: You");
             }
-        }
-        else if(message.startsWith("INDEX"))
-        {
+        } else if (message.startsWith("INDEX")) {
             setGameId(Integer.parseInt(message.split(" ")[1]));
-        }else if (message.startsWith("[")) {
+        } else if (message.startsWith("[")) {
             System.out.println("Updating board with message: " + message);
             updateBoard(message);
         } else if (message.equals("INVALID MOVE")) {
@@ -114,14 +125,20 @@ public class TicTacToeController {
         } else if (message.startsWith("PLAYER ID")) {
             System.out.println("Player ID message received: " + message);
             playerIdLabel.setText("Player ID: " + message.split(" ")[2]);
-        }else if (message.startsWith("PLAYER")) {
+        } else if (message.startsWith("PLAYER")) {
             System.out.println("Player message received: " + message);
             showMessage(message);
             gameOver = true;
+            if (timeline != null) {
+                timeline.stop();
+            }
         } else if (message.equals("DRAW")) {
             System.out.println("Draw message received");
             showMessage("It's a draw!");
             gameOver = true;
+            if (timeline != null) {
+                timeline.stop();
+            }
         } else if (message.startsWith("TURN")) {
             System.out.println("Turn message received: " + message);
             showTurn(message.charAt(5));
@@ -131,12 +148,15 @@ public class TicTacToeController {
         } else if (message.equals("SECOND PLAYER JOINED")) {
             System.out.println("Second player joined message received");
             showStatus("Second player joined. Game starting...");
-        }  else if (message.startsWith("GAME ID")) {
+        } else if (message.startsWith("GAME ID")) {
             System.out.println("Game ID message received: " + message);
             gameIdLabel.setText("Game ID: " + message.split(" ")[2]);
         } else if (message.startsWith("CONNECTED PLAYERS")) {
             System.out.println("Connected players message received: " + message);
             connectedPlayersLabel.setText("Connected Players: " + message.split(" ")[2]);
+        } else if (message.startsWith("TIME")) {
+            timeSeconds = Integer.parseInt(message.split(" ")[1]);
+            timerLabel.setText("Time: " + timeSeconds);
         } else {
             System.out.println("Unknown message received: " + message);
         }
@@ -152,20 +172,20 @@ public class TicTacToeController {
         }
     }
 
-private void updateBoard(String boardString) {
-    String[] boardArray = boardString.replaceAll("[\\[\\] ]", "").split(",");
-    printBoard(boardArray);
-    for (int i = 0; i < boardArray.length; i++) {
-        String cell = boardArray[i].trim();
-        buttons[i].setText(cell);
-        buttons[i].getStyleClass().removeAll("x-button", "o-button");
-        if (cell.equals("X")) {
-            buttons[i].getStyleClass().add("x-button");
-        } else if (cell.equals("O")) {
-            buttons[i].getStyleClass().add("o-button");
+    private void updateBoard(String boardString) {
+        String[] boardArray = boardString.replaceAll("[\\[\\] ]", "").split(",");
+        printBoard(boardArray);
+        for (int i = 0; i < boardArray.length; i++) {
+            String cell = boardArray[i].trim();
+            buttons[i].setText(cell);
+            buttons[i].getStyleClass().removeAll("x-button", "o-button");
+            if (cell.equals("X")) {
+                buttons[i].getStyleClass().add("x-button");
+            } else if (cell.equals("O")) {
+                buttons[i].getStyleClass().add("o-button");
+            }
         }
     }
-}
 
     private void showMessage(String message) {
         messageLabel.setText(message);

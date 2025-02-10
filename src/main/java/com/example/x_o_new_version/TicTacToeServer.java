@@ -64,11 +64,12 @@ public class TicTacToeServer {
     public static synchronized List<String> getAvailableGames() {
         List<String> availableGames = new ArrayList<>();
         for (int i = 0; i < games.size(); i++) {
-            availableGames.add("Game " + i);
+            if (!games.get(i).isReady()) {
+                availableGames.add("Game " + i);
+            }
         }
         return availableGames;
     }
-
     public static synchronized void makeMove(ClientHandler client, int index, int gameId) {
         System.out.println("Making move: " + index + " by player: " + client.getPlayer());
         Game currentGame = games.get(gameId);

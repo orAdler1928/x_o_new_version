@@ -1,6 +1,11 @@
 package com.example.x_o_new_version;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Timer;
+import java.util.TimerTask;
 
 class Game {
     private ClientHandler player1;
@@ -8,10 +13,13 @@ class Game {
     private char[] board = new char[9];
     private char currentPlayer = 'X';
     private boolean gameOver = false;
+    private Timer timer;
+    private int timeSeconds = 0;
 
     public Game(ClientHandler player1) {
         this.player1 = player1;
         Arrays.fill(board, ' ');
+        DatabaseConnection.createTable();
     }
 
     public boolean addPlayer(ClientHandler player) {
@@ -20,6 +28,7 @@ class Game {
             player.setPlayer('O');
             player1.sendMessage("SECOND PLAYER JOINED");
             player2.sendMessage("SECOND PLAYER JOINED");
+            startTimer();
             updatePlayerStatus();
             sendGameId();
             sendPlayerIds();
@@ -27,6 +36,45 @@ class Game {
             return true;
         }
         return false;
+    }
+
+    private void startTimer() {
+        timer = new Timer();
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                timeSeconds++;
+                broadcastTime();
+                saveTimeToDatabase();
+            }
+        }, 1000, 1000);
+    }
+
+    private void broadcastTime() {
+        String timeMessage = "TIME " + timeSeconds;
+        player1.sendMessage(timeMessage);
+        if (player2 != null) {
+            player2.sendMessage(timeMessage);
+        }
+    }
+
+    private void saveTimeToDatabase() {
+        String sql = "INSERT INTO game_times(game_id, time_seconds) VALUES(?,?)";
+
+        try (Connection conn = DatabaseConnection.connect();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, this.hashCode());
+            pstmt.setInt(2, timeSeconds);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    public void stopTimer() {
+        if (timer != null) {
+            timer.cancel();
+        }
     }
 
     public ClientHandler getPlayer1() {
@@ -51,9 +99,11 @@ class Game {
             if (checkWin(player)) {
                 broadcastMessage("PLAYER " + player + " WINS");
                 gameOver = true;
+                stopTimer();
             } else if (checkDraw()) {
                 broadcastMessage("DRAW");
                 gameOver = true;
+                stopTimer();
             }
             System.out.println("Move made: " + index + " by player: " + player);
         }
