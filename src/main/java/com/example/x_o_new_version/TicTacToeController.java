@@ -39,7 +39,7 @@ public class TicTacToeController {
 
     public void initialize() {
         for (int i = 0; i < 9; i++) {
-            buttons[i] = new Button(" ");
+            buttons[i] = new Button("");
             buttons[i].setMinSize(100, 100);
             buttons[i].getStyleClass().add("tic-tac-toe-button");
             final int index = i;
@@ -69,7 +69,7 @@ public class TicTacToeController {
     }
 
     private void makeMove(int index) {
-        if (!gameOver && buttons[index].getText().equals(" ")) {
+        if (!gameOver && buttons[index].getText().equals("")) {
             out.println("MOVE " + index + " " + gameId);
         }
     }
@@ -107,7 +107,10 @@ public class TicTacToeController {
         } else if (message.equals("INVALID MOVE")) {
             System.out.println("Invalid move received");
             showMessage("Invalid move, try again.");
-        } else if (message.startsWith("PLAYER")) {
+        } else if (message.startsWith("PLAYER ID")) {
+            System.out.println("Player ID message received: " + message);
+            playerIdLabel.setText("Player ID: " + message.split(" ")[2]);
+        }else if (message.startsWith("PLAYER")) {
             System.out.println("Player message received: " + message);
             showMessage(message);
             gameOver = true;
@@ -124,10 +127,7 @@ public class TicTacToeController {
         } else if (message.equals("SECOND PLAYER JOINED")) {
             System.out.println("Second player joined message received");
             showStatus("Second player joined. Game starting...");
-        } else if (message.startsWith("PLAYER ID")) {
-            System.out.println("Player ID message received: " + message);
-            playerIdLabel.setText("Player ID: " + message.split(" ")[2]);
-        } else if (message.startsWith("GAME ID")) {
+        }  else if (message.startsWith("GAME ID")) {
             System.out.println("Game ID message received: " + message);
             gameIdLabel.setText("Game ID: " + message.split(" ")[2]);
         } else if (message.startsWith("CONNECTED PLAYERS")) {
@@ -138,18 +138,30 @@ public class TicTacToeController {
         }
     }
 
-    private void updateBoard(String boardString) {
-        String[] boardArray = boardString.replaceAll("[\\[\\] ]", "").split(",");
-        for (int i = 0; i < boardArray.length; i++) {
-            buttons[i].setText(boardArray[i]);
-            buttons[i].getStyleClass().removeAll("x-button", "o-button");
-            if (boardArray[i].equals("X")) {
-                buttons[i].getStyleClass().add("x-button");
-            } else if (boardArray[i].equals("O")) {
-                buttons[i].getStyleClass().add("o-button");
+    private void printBoard(String[] boardString) {
+        System.out.println("Printing board: ");
+        for (int i = 0; i < boardString.length; i++) {
+            System.out.print(boardString[i] + " ");
+            if ((i + 1) % 3 == 0) {
+                System.out.println();
             }
         }
     }
+
+private void updateBoard(String boardString) {
+    String[] boardArray = boardString.replaceAll("[\\[\\] ]", "").split(",");
+    printBoard(boardArray);
+    for (int i = 0; i < boardArray.length; i++) {
+        String cell = boardArray[i].trim();
+        buttons[i].setText(cell);
+        buttons[i].getStyleClass().removeAll("x-button", "o-button");
+        if (cell.equals("X")) {
+            buttons[i].getStyleClass().add("x-button");
+        } else if (cell.equals("O")) {
+            buttons[i].getStyleClass().add("o-button");
+        }
+    }
+}
 
     private void showMessage(String message) {
         messageLabel.setText(message);

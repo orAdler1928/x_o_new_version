@@ -21,37 +21,37 @@ public class TicTacToeServer {
         }
     }
 
-public static synchronized void createGame(ClientHandler client) {
-    Game game = new Game(client);
-    games.add(game);
-    client.setCurrentGame(game);
-    client.sendMessage("GAME CREATED " + (games.size() - 1));
-    client.setPlayer('X'); // This will send the WELCOME message
-    client.sendMessage("WAITING FOR SECOND PLAYER");
-    game.updatePlayerStatus();
-    game.sendGameId();
-    game.sendPlayerIds();
-    broadcastGameList();
-    System.out.println("Game created: " + (games.size() - 1));
-}
-
-public static synchronized void joinGame(ClientHandler client, int gameId) {
-    System.out.println("Attempting to join game: " + gameId);
-    if (gameId >= 0 && gameId < games.size() && games.get(gameId).addPlayer(client)) {
-        client.setCurrentGame(games.get(gameId));
-        client.sendMessage("GAME JOINED");
-        client.setPlayer('O'); // This will send the WELCOME message
-        games.get(gameId).startGame();
-        games.get(gameId).updatePlayerStatus();
-        games.get(gameId).sendGameId();
-        games.get(gameId).sendPlayerIds();
+    public static synchronized void createGame(ClientHandler client) {
+        Game game = new Game(client);
+        games.add(game);
+        client.setCurrentGame(game);
+        client.sendMessage("GAME CREATED " + (games.size() - 1));
+        client.setPlayer('X'); // This will send the WELCOME message
+        client.sendMessage("WAITING FOR SECOND PLAYER");
+        game.updatePlayerStatus();
+        game.sendGameId();
+        game.sendPlayerIds();
         broadcastGameList();
-        System.out.println("Game joined: " + gameId);
-    } else {
-        client.sendMessage("INVALID GAME ID");
-        System.out.println("Invalid game ID: " + gameId);
+        System.out.println("Game created: " + (games.size() - 1));
     }
-}
+
+    public static synchronized void joinGame(ClientHandler client, int gameId) {
+        System.out.println("Attempting to join game: " + gameId);
+        if (gameId >= 0 && gameId < games.size() && games.get(gameId).addPlayer(client)) {
+            client.setCurrentGame(games.get(gameId));
+            client.sendMessage("GAME JOINED");
+            client.setPlayer('O'); // This will send the WELCOME message
+            games.get(gameId).startGame();
+            games.get(gameId).updatePlayerStatus();
+            games.get(gameId).sendGameId();
+            games.get(gameId).sendPlayerIds();
+            broadcastGameList();
+            System.out.println("Game joined: " + gameId);
+        } else {
+            client.sendMessage("INVALID GAME ID");
+            System.out.println("Invalid game ID: " + gameId);
+        }
+    }
 
     public static synchronized void broadcastGameList() {
         List<String> availableGames = getAvailableGames();

@@ -69,7 +69,7 @@ public class LoginController {
     private void listenToServer() {
         try {
             String message;
-            while ((message = in.readLine()) != null) {
+            while ((message = in.readLine()) != null && !(message = in.readLine()).startsWith("GAME CREATED") && !(message = in.readLine()).startsWith("GAME JOINED")) {
                 final String finalMessage = message;
                 System.out.println("Received from server: " + finalMessage);
                 if (message.startsWith("GAMES")) {
