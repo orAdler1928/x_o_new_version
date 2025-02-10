@@ -6,10 +6,12 @@
 <?import javafx.scene.layout.VBox?>
 
 <VBox alignment="CENTER" spacing="20.0" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.example.x_o_new_version.LoginController">
-    <Button text="Create Game" onAction="#createGame"/>
-    <Button text="List Games" onAction="#listGames"/>
+      fx:controller="com.example.x_o_new_version.LoginController"
+      styleClass="login-vbox">
+    <Label text="Welcome to Tic Tac Toe!" styleClass="login-label"/>
+    <Button text="Create Game" onAction="#createGame" styleClass="login-button"/>
+    <Button text="List Games" onAction="#listGames" styleClass="login-button"/>
     <ListView fx:id="gameListView"/>
-    <Button text="Join Game" onAction="#joinGame"/>
-    <Label fx:id="statusLabel" text=""/>
+    <Button text="Join Game" onAction="#joinGame" styleClass="login-button"/>
+    <Label fx:id="statusLabel" text="" styleClass="login-label"/>
 </VBox>

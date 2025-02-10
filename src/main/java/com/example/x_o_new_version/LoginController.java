@@ -17,11 +17,14 @@ public class LoginController {
     private Socket socket;
     private PrintWriter out;
     private BufferedReader in;
+    private int currentGameId;
 
     public void initialize() throws IOException {
         socket = new Socket("localhost", 12345);
         out = new PrintWriter(socket.getOutputStream(), true);
         in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+        HelloApplication.setConnection(socket, out, in);
 
         new Thread(this::listenToServer).start();
         listGames(); // Request game list on initialization
@@ -29,58 +32,60 @@ public class LoginController {
 
     @FXML
     private void createGame() {
+        System.out.println("Creating game...");
         out.println("CREATE");
+        Platform.runLater(() -> {
+            try {
+                HelloApplication.switchToGame(currentGameId);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     @FXML
     private void joinGame() {
         String selectedGame = gameListView.getSelectionModel().getSelectedItem();
         if (selectedGame != null) {
-            int gameId = Integer.parseInt(selectedGame.split(" ")[1]);
-            out.println("JOIN " + gameId);
+            currentGameId = Integer.parseInt(selectedGame.split(" ")[1]);
+            System.out.println("Joining game: " + currentGameId);
+            out.println("JOIN " + currentGameId);
+            Platform.runLater(() -> {
+                try {
+                    HelloApplication.switchToGame(currentGameId);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
         }
     }
 
     @FXML
     private void listGames() {
+        System.out.println("Listing games...");
         out.println("LIST");
     }
 
     private void listenToServer() {
-            try {
-                String message;
-                while ((message = in.readLine()) != null) {
-                    final String finalMessage = message;
-                    if (message.startsWith("GAMES")) {
-                        Platform.runLater(() -> {
-                            gameListView.getItems().clear();
-                            String[] games = finalMessage.substring(6).split(",");
-                            for (String game : games) {
-                                if (!game.trim().isEmpty()) {
-                                    gameListView.getItems().add(game);
-                                }
+        try {
+            String message;
+            while ((message = in.readLine()) != null && !(message = in.readLine()).startsWith("GAME CREATED") && !(message = in.readLine()).startsWith("GAME JOINED")) {
+                final String finalMessage = message;
+                System.out.println("Received from server: " + finalMessage);
+                if (message.startsWith("GAMES")) {
+                    Platform.runLater(() -> {
+                        gameListView.getItems().clear();
+                        String[] games = finalMessage.substring(6).split(",");
+                        for (String game : games) {
+                            if (!game.trim().isEmpty()) {
+                                gameListView.getItems().add(game);
                             }
-                        });
-                    } else if (message.startsWith("GAME CREATED") || message.startsWith("GAME JOINED")) {
-                        Platform.runLater(() -> {
-                            try {
-                                HelloApplication.switchToGame();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        });
-                    } else if (message.equals("WAITING FOR SECOND PLAYER")) {
-                        Platform.runLater(() -> {
-                            statusLabel.setText("Waiting for second player...");
-                        });
-                    } else if (message.equals("SECOND PLAYER JOINED")) {
-                        Platform.runLater(() -> {
-                            statusLabel.setText("Second player joined. Game starting...");
-                        });
-                    }
+                        }
+                    });
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
             }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

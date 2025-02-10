@@ -24,28 +24,33 @@ public class TicTacToeServer {
     public static synchronized void createGame(ClientHandler client) {
         Game game = new Game(client);
         games.add(game);
-        waitingClients.add(client);
         client.setCurrentGame(game);
         client.sendMessage("GAME CREATED " + (games.size() - 1));
+        client.sendMessage("INDEX "+(games.size() - 1));
+        client.setPlayer('X'); // This will send the WELCOME message
         client.sendMessage("WAITING FOR SECOND PLAYER");
         game.updatePlayerStatus();
         game.sendGameId();
         game.sendPlayerIds();
         broadcastGameList();
+        System.out.println("Game created: " + (games.size() - 1));
     }
 
     public static synchronized void joinGame(ClientHandler client, int gameId) {
-        if (gameId < games.size() && games.get(gameId).addPlayer(client)) {
-            waitingClients.remove(games.get(gameId).getPlayer1());
+        System.out.println("Attempting to join game: " + gameId);
+        if (gameId >= 0 && gameId < games.size() && games.get(gameId).addPlayer(client)) {
             client.setCurrentGame(games.get(gameId));
+            client.sendMessage("GAME JOINED");
+            client.setPlayer('O'); // This will send the WELCOME message
             games.get(gameId).startGame();
             games.get(gameId).updatePlayerStatus();
             games.get(gameId).sendGameId();
             games.get(gameId).sendPlayerIds();
             broadcastGameList();
-            client.sendMessage("GAME JOINED");
+            System.out.println("Game joined: " + gameId);
         } else {
             client.sendMessage("INVALID GAME ID");
+            System.out.println("Invalid game ID: " + gameId);
         }
     }
 
@@ -59,17 +64,29 @@ public class TicTacToeServer {
     public static synchronized List<String> getAvailableGames() {
         List<String> availableGames = new ArrayList<>();
         for (int i = 0; i < games.size(); i++) {
-            availableGames.add("Game " + i);
+            if (!games.get(i).isReady()) {
+                availableGames.add("Game " + i);
+            }
         }
         return availableGames;
     }
-
-    public static synchronized void makeMove(ClientHandler client, int index) {
-        Game currentGame = client.getCurrentGame();
-        if (currentGame != null) {
+    public static synchronized void makeMove(ClientHandler client, int index, int gameId) {
+        System.out.println("Making move: " + index + " by player: " + client.getPlayer());
+        Game currentGame = games.get(gameId);
+        if (currentGame != null && currentGame.isPlayerTurn(client)) {
             currentGame.makeMove(index, client.getPlayer());
+            currentGame.broadcastBoard(); // Send the updated board to both players
+            currentGame.broadcastTurn(); // Send the current turn to both players
+            if (currentGame.checkWin(client.getPlayer())) {
+                currentGame.broadcastMessage("PLAYER " + client.getPlayer() + " WINS");
+                currentGame.setGameOver(true);
+            } else if (currentGame.checkDraw()) {
+                currentGame.broadcastMessage("DRAW");
+                currentGame.setGameOver(true);
+            }
         } else {
-            client.sendMessage("NO GAME ASSIGNED");
+            client.sendMessage("INVALID MOVE");
+            System.out.println("Invalid move by player: " + client.getPlayer());
         }
     }
 }
