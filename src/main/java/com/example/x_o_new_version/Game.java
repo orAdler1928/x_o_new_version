@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -98,14 +99,27 @@ class Game {
             broadcastTurn();
             if (checkWin(player)) {
                 broadcastMessage("PLAYER " + player + " WINS");
-                gameOver = true;
-                stopTimer();
+                endGame();
             } else if (checkDraw()) {
                 broadcastMessage("DRAW");
-                gameOver = true;
-                stopTimer();
+                endGame();
             }
             System.out.println("Move made: " + index + " by player: " + player);
+        }
+    }
+
+    private void endGame() {
+        gameOver = true;
+        stopTimer();
+        sendLeaderboard();
+    }
+
+    private void sendLeaderboard() {
+        List<String> leaderboard = DatabaseConnection.getGameDurations();
+        String leaderboardMessage = "LEADERBOARD " + String.join(",", leaderboard);
+        player1.sendMessage(leaderboardMessage);
+        if (player2 != null) {
+            player2.sendMessage(leaderboardMessage);
         }
     }
 

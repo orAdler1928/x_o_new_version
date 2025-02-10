@@ -6,10 +6,13 @@ import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.layout.GridPane;
 import javafx.util.Duration;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.Socket;
 
 public class TicTacToeController {
@@ -33,6 +36,8 @@ public class TicTacToeController {
     private Label connectedPlayersLabel;
     @FXML
     private Label timerLabel;
+    @FXML
+    private ListView<String> leaderboardListView;
 
     private Button[] buttons = new Button[9];
     private Socket socket;
@@ -157,6 +162,16 @@ public class TicTacToeController {
         } else if (message.startsWith("TIME")) {
             timeSeconds = Integer.parseInt(message.split(" ")[1]);
             timerLabel.setText("Time: " + timeSeconds);
+        } else if (message.startsWith("LEADERBOARD")) {
+            Platform.runLater(() -> {
+                leaderboardListView.getItems().clear();
+                String[] leaderboard = message.substring(12).split(",");
+                for (String entry : leaderboard) {
+                    if (!entry.trim().isEmpty()) {
+                        leaderboardListView.getItems().add(entry);
+                    }
+                }
+            });
         } else {
             System.out.println("Unknown message received: " + message);
         }

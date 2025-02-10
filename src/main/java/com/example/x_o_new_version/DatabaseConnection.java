@@ -4,6 +4,9 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DatabaseConnection {
     private static final String URL = "jdbc:sqlite:game_times.db";
@@ -31,5 +34,24 @@ public class DatabaseConnection {
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
+    }
+
+    public static List<String> getGameDurations() {
+        String sql = "SELECT game_id, MAX(time_seconds) as duration FROM game_times GROUP BY game_id ORDER BY duration DESC";
+        List<String> durations = new ArrayList<>();
+
+        try (Connection conn = connect();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                int gameId = rs.getInt("game_id");
+                int duration = rs.getInt("duration");
+                durations.add("Game ID: " + gameId + ", Duration: " + duration + " seconds");
+            }
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+        return durations;
     }
 }
