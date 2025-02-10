@@ -26,6 +26,7 @@ public class TicTacToeServer {
         games.add(game);
         client.setCurrentGame(game);
         client.sendMessage("GAME CREATED " + (games.size() - 1));
+        client.sendMessage("INDEX "+(games.size() - 1));
         client.setPlayer('X'); // This will send the WELCOME message
         client.sendMessage("WAITING FOR SECOND PLAYER");
         game.updatePlayerStatus();

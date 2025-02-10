@@ -101,7 +101,11 @@ public class TicTacToeController {
                 playerXLabel.setText("Player X: Opponent");
                 playerOLabel.setText("Player O: You");
             }
-        } else if (message.startsWith("[")) {
+        }
+        else if(message.startsWith("INDEX"))
+        {
+            setGameId(Integer.parseInt(message.split(" ")[1]));
+        }else if (message.startsWith("[")) {
             System.out.println("Updating board with message: " + message);
             updateBoard(message);
         } else if (message.equals("INVALID MOVE")) {

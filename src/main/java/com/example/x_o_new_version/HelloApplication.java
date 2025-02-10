@@ -26,7 +26,7 @@ package com.example.x_o_new_version;
 
         public static void switchToGame(int gameId) throws IOException {
             FXMLLoader fxmlLoader = new FXMLLoader(HelloApplication.class.getResource("tic-tac-toe-view.fxml"));
-            Scene scene = new Scene(fxmlLoader.load(), 600, 600);
+            Scene scene = new Scene(fxmlLoader.load(), 600, 700);
             TicTacToeController controller = fxmlLoader.getController();
             controller.setGameId(gameId);
             controller.setConnection(socket, out, in);
